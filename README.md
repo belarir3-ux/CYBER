@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>ختم رقم التعريف الوطني على PDF</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    background: #f3f4f6;
+    margin: 0;
+    padding: 24px;
+    color: #1f2a37;
+  }
+  .card {
+    max-width: 640px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    padding: 24px 28px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.sub { color: #6b7280; margin: 0 0 18px; font-size: 13px; line-height: 1.5; }
+  label { display: block; font-weight: 600; margin: 14px 0 6px; font-size: 13.5px; }
+  input[type="text"] {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  input[type="file"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    background: #f9fafb;
+  }
+  .section {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 16px;
+  }
+  .section h2 {
+    font-size: 14px;
+    margin: 0 0 8px;
+    color: #374151;
+  }
+  .folder-status {
+    font-size: 12.5px;
+    color: #6b7280;
+    margin-top: 6px;
+  }
+  
+  /* تنسيق قسم التواصل الجديد */
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .contact-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 12.5px;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .contact-item strong {
+    color: #0f172a;
+  }
+
+  .row { display: flex; gap: 10px; margin-top: 10px; }
+  button {
+    flex: 1;
+    padding: 11px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  #btn-pick-folder { background: #374151; color: #fff; }
+  #btn-pick-folder:hover { background: #1f2937; }
+  #btn-refresh { background: #1f6feb; color: #fff; }
+  #btn-refresh:hover { background: #1a5fd1; }
+  #btn-print { background: #16a34a; color: #fff; }
+  #btn-print:hover { background: #128a3e; }
+  #btn-download { background: #f3f4f6; color: #1f2a37; border: 1px solid #cbd5e1; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  #status { margin-top: 12px; font-size: 13px; min-height: 18px; }
+  #status.ok { color: #15803d; }
+  #status.err { color: #dc2626; }
+  #preview-wrap { margin-top: 18px; display: none; }
+  #preview-wrap iframe {
+    width: 100%;
+    height: 460px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+  }
+  .toggle-manual {
+    font-size: 12.5px;
+    color: #1f6feb;
+    cursor: pointer;
+    display: inline-block;
+    margin-top: 10px;
+  }
+  #manual-section { display: none; margin-top: 10px; }
+  .unsupported {
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 14px;
+  }
+</style>
+<!-- تضمين مكتبة pdf-lib للتعامل مع ملفات الـ PDF -->
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+  <div class="card">
+    <h1>ختم رقم التعريف الوطني على شهادة PDF</h1>
+    <p class="sub">تعمل الأداة على إضافة ختم شريط التواصل ورقم التعريف الوطني على وثائق الـ PDF بسهولة.</p>
+
+    <div class="section" id="folder-section">
+      <h2>مجلد التنزيلات</h2>
+      <div class="row">
+        <button id="btn-pick-folder">تحديد مجلد التنزيلات (مرة واحدة فقط)</button>
+      </div>
+      <div class="folder-status" id="folder-status">لم يتم اختيار أي مجلد بعد.</div>
+      <div id="unsupported-msg" class="unsupported" style="display:none;">
+        متصفحك لا يدعم اختيار المجلدات تلقائياً. استعمل "رفع ملف يدوياً" بالأسفل بدلاً من ذلك.
+      </div>
+    </div>
+
+    <!-- قسم بيانات التواصل المنظم -->
+    <div class="section">
+      <h2 style="margin-top:0;">بيانات شريط التواصل (تُضاف تلقائياً للوثيقة)</h2>
+      <div class="contact-grid">
+        <div class="contact-item">📧 <strong>إيميل:</strong> belarir3@gmail.com</div>
+        <div class="contact-item">✈ <strong>تليجرام:</strong> @belarir3</div>
+        <div class="contact-item">فيس بوك: <strong>مكتبة بلعرير</strong></div>
+        <div class="contact-item">🖶 <strong>ثابت:</strong> 049621695</div>
+        <div class="contact-item">☎ <strong>الهاتف:</strong> 0550341695</div>
+      </div>
+    </div>
+
+    <label for="national-id">رقم التعريف الوطني</label>
+    <input type="text" id="national-id" placeholder="أدخل رقم التعريف الوطني" inputmode="numeric" />
+
+    <div class="row">
+      <button id="btn-refresh" disabled>ختم آخر ملف PDF</button>
+    </div>
+    <div class="row">
+      <button id="btn-print" disabled>طباعة</button>
+      <button id="btn-download" disabled>تحميل الملف</button>
+    </div>
+
+    <span class="toggle-manual" id="toggle-manual">أو رفع ملف PDF يدوياً بدلاً من ذلك</span>
+    <div id="manual-section">
+      <input type="file" id="pdf-file" accept="application/pdf" />
+      <div class="row">
+        <button id="btn-stamp-manual">إضافة الختم على هذا الملف</button>
+      </div>
+    </div>
+
+    <div id="status"></div>
+
+    <div id="preview-wrap">
+      <label>معاينة الملف المختوم</label>
+      <iframe id="preview-frame"></iframe>
+    </div>
+  </div>
+
+  <script>
+    let dirHandle = null;
+    let currentPdfBytes = null;
+    let stampedPdfUrl = null;
+
+    const btnPickFolder = document.getElementById('btn-pick-folder');
+    const folderStatus = document.getElementById('folder-status');
+    const unsupportedMsg = document.getElementById('unsupported-msg');
+    const btnRefresh = document.getElementById('btn-refresh');
+    const btnPrint = document.getElementById('btn-print');
+    const btnDownload = document.getElementById('btn-download');
+    const toggleManual = document.getElementById('toggle-manual');
+    const manualSection = document.getElementById('manual-section');
+    const pdfFileInput = document.getElementById('pdf-file');
+    const btnStampManual = document.getElementById('btn-stamp-manual');
+    const statusDiv = document.getElementById('status');
+    const previewWrap = document.getElementById('preview-wrap');
+    const previewFrame = document.getElementById('preview-frame');
+    const nationalIdInput = document.getElementById('national-id');
+
+    // التحقق من دعم المتصفح لـ File System Access API
+    if (!('showDirectoryPicker' in window)) {
+      unsupportedMsg.style.display = 'block';
+      btnPickFolder.disabled = true;
+    }
+
+    toggleManual.addEventListener('click', () => {
+      manualSection.style.display = manualSection.style.display === 'block' ? 'none' : 'block';
+    });
+
+    btnPickFolder.addEventListener('click', async () => {
+      try {
+        dirHandle = await window.showDirectoryPicker();
+        folderStatus.innerText = `المجلد المحدد: ${dirHandle.name}`;
+        btnRefresh.disabled = false;
+        setStatus('تم اختيار المجلد بنجاح. يمكنك الآن ختم أحدث ملف.', 'ok');
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setStatus('تعذر الوصول إلى المجلد المحدد.', 'err');
+        }
+      }
+    });
+
+    btnRefresh.addEventListener('click', async () => {
+      if (!dirHandle) return;
+      try {
+        setStatus('جاري البحث عن أحدث ملف PDF...', '');
+        let latestFile = null;
+        let latestMtime = 0;
+
+        for await (const entry of dirHandle.values()) {
+          if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.pdf')) {
+            const file = await entry.getFile();
+            if (file.lastModified > latestMtime) {
+              latestMtime = file.lastModified;
+              latestFile = file;
+            }
+          }
+        }
+
+        if (!latestFile) {
+          setStatus('لم يتم العثور على أية ملفات PDF في هذا المجلد.', 'err');
+          return;
+        }
+
+        const arrayBuffer = await latestFile.arrayBuffer();
+        await processPdf(arrayBuffer, latestFile.name);
+      } catch (err) {
+        setStatus('حدث خطأ أثناء قراءة المجلد: ' + err.message, 'err');
+      }
+    });
+
+    btnStampManual.addEventListener('click', async () => {
+      const file = pdfFileInput.files[0];
+      if (!file) {
+        setStatus('يرجى اختيار ملف PDF أولاً.', 'err');
+        return;
+      }
+      const arrayBuffer = await file.arrayBuffer();
+      await processPdf(arrayBuffer, file.name);
+    });
+
+    async function processPdf(arrayBuffer, fileName) {
+      const nationalId = nationalIdInput.value.trim();
+      try {
+        setStatus('جاري معالجة الملف وإضافة الختم...', '');
+        const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+        const pages = pdfDoc.getPages();
+        const firstPage = pages[0];
+        const { width, height } = firstPage.getSize();
+
+        // إضافة نص التواصل ورقم التعريف الوطني على الصفحة الأولى
+        const contactText = "belarir3@gmail.com | @belarir3 | مكتبة بلعرير | 049621695 | 0550341695";
+        
+        // رسم شريط سفلي
+        firstPage.drawRectangle({
+          x: 0,
+          y: 0,
+          width: width,
+          height: 25,
+          color: PDFLib.rgb(0.95, 0.95, 0.95),
+        });
+
+        firstPage.drawText(contactText, {
+          x: 20,
+          y: 8,
+          size: 9,
+          color: PDFLib.rgb(0.2, 0.2, 0.2),
+        });
+
+        if (nationalId) {
+          firstPage.drawText(`NIN: ${nationalId}`, {
+            x: width - 150,
+            y: height - 20,
+            size: 11,
+            color: PDFLib.rgb(0.8, 0, 0),
+          });
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        currentPdfBytes = pdfBytes;
+
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        if (stampedPdfUrl) URL.revokeObjectURL(stampedPdfUrl);
+        stampedPdfUrl = URL.createObjectURL(blob);
+
+        previewFrame.src = stampedPdfUrl;
+        previewWrap.style.display = 'block';
+
+        btnPrint.disabled = false;
+        btnDownload.disabled = false;
+
+        setStatus(`تم ختم الملف "${fileName}" بنجاح!`, 'ok');
+      } catch (err) {
+        setStatus('حدث خطأ أثناء معالجة ملف PDF: ' + err.message, 'err');
+      }
+    }
+
+    btnDownload.addEventListener('click', () => {
+      if (!currentPdfBytes) return;
+      const blob = new Blob([currentPdfBytes], { type: 'application/pdf' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'stamped_document.pdf';
+      a.click();
+    });
+
+    btnPrint.addEventListener('click', () => {
+      if (!stampedPdfUrl) return;
+      previewFrame.contentWindow.print();
+    });
+
+    function setStatus(msg, type) {
+      statusDiv.innerText = msg;
+      statusDiv.className = type;
+    }
+  </script>
+</body>
+</html>
