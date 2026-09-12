@@ -1,341 +1,343 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<title>ختم رقم التعريف الوطني على PDF</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-    background: #f3f4f6;
-    margin: 0;
-    padding: 24px;
-    color: #1f2a37;
-  }
-  .card {
-    max-width: 640px;
-    margin: 0 auto;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    padding: 24px 28px;
-  }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  p.sub { color: #6b7280; margin: 0 0 18px; font-size: 13px; line-height: 1.5; }
-  label { display: block; font-weight: 600; margin: 14px 0 6px; font-size: 13.5px; }
-  input[type="text"] {
-    width: 100%;
-    padding: 9px 10px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    font-size: 14px;
-  }
-  input[type="file"] {
-    width: 100%;
-    padding: 8px;
-    border: 1px dashed #cbd5e1;
-    border-radius: 8px;
-    background: #f9fafb;
-  }
-  .section {
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-top: 16px;
-  }
-  .section h2 {
-    font-size: 14px;
-    margin: 0 0 8px;
-    color: #374151;
-  }
-  .folder-status {
-    font-size: 12.5px;
-    color: #6b7280;
-    margin-top: 6px;
-  }
-  
-  /* تنسيق قسم التواصل الجديد */
-  .contact-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
-    margin-top: 8px;
-  }
-  .contact-item {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 8px 10px;
-    font-size: 12.5px;
-    color: #334155;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .contact-item strong {
-    color: #0f172a;
-  }
-
-  .row { display: flex; gap: 10px; margin-top: 10px; }
-  button {
-    flex: 1;
-    padding: 11px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  #btn-pick-folder { background: #374151; color: #fff; }
-  #btn-pick-folder:hover { background: #1f2937; }
-  #btn-refresh { background: #1f6feb; color: #fff; }
-  #btn-refresh:hover { background: #1a5fd1; }
-  #btn-print { background: #16a34a; color: #fff; }
-  #btn-print:hover { background: #128a3e; }
-  #btn-download { background: #f3f4f6; color: #1f2a37; border: 1px solid #cbd5e1; }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  #status { margin-top: 12px; font-size: 13px; min-height: 18px; }
-  #status.ok { color: #15803d; }
-  #status.err { color: #dc2626; }
-  #preview-wrap { margin-top: 18px; display: none; }
-  #preview-wrap iframe {
-    width: 100%;
-    height: 460px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-  }
-  .toggle-manual {
-    font-size: 12.5px;
-    color: #1f6feb;
-    cursor: pointer;
-    display: inline-block;
-    margin-top: 10px;
-  }
-  #manual-section { display: none; margin-top: 10px; }
-  .unsupported {
-    background: #fef3c7;
-    border: 1px solid #fde68a;
-    color: #92400e;
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    margin-top: 14px;
-  }
-</style>
-<!-- تضمين مكتبة pdf-lib للتعامل مع ملفات الـ PDF -->
-<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-</head>
-<body>
-  <div class="card">
-    <h1>ختم رقم التعريف الوطني على شهادة PDF</h1>
-    <p class="sub">تعمل الأداة على إضافة ختم شريط التواصل ورقم التعريف الوطني على وثائق الـ PDF بسهولة.</p>
-
-    <div class="section" id="folder-section">
-      <h2>مجلد التنزيلات</h2>
-      <div class="row">
-        <button id="btn-pick-folder">تحديد مجلد التنزيلات (مرة واحدة فقط)</button>
-      </div>
-      <div class="folder-status" id="folder-status">لم يتم اختيار أي مجلد بعد.</div>
-      <div id="unsupported-msg" class="unsupported" style="display:none;">
-        متصفحك لا يدعم اختيار المجلدات تلقائياً. استعمل "رفع ملف يدوياً" بالأسفل بدلاً من ذلك.
-      </div>
-    </div>
-
-    <!-- قسم بيانات التواصل المنظم -->
-    <div class="section">
-      <h2 style="margin-top:0;">بيانات شريط التواصل (تُضاف تلقائياً للوثيقة)</h2>
-      <div class="contact-grid">
-        <div class="contact-item">📧 <strong>إيميل:</strong> belarir3@gmail.com</div>
-        <div class="contact-item">✈ <strong>تليجرام:</strong> @belarir3</div>
-        <div class="contact-item">فيس بوك: <strong>مكتبة بلعرير</strong></div>
-        <div class="contact-item">🖶 <strong>ثابت:</strong> 049621695</div>
-        <div class="contact-item">☎ <strong>الهاتف:</strong> 0550341695</div>
-      </div>
-    </div>
-
-    <label for="national-id">رقم التعريف الوطني</label>
-    <input type="text" id="national-id" placeholder="أدخل رقم التعريف الوطني" inputmode="numeric" />
-
-    <div class="row">
-      <button id="btn-refresh" disabled>ختم آخر ملف PDF</button>
-    </div>
-    <div class="row">
-      <button id="btn-print" disabled>طباعة</button>
-      <button id="btn-download" disabled>تحميل الملف</button>
-    </div>
-
-    <span class="toggle-manual" id="toggle-manual">أو رفع ملف PDF يدوياً بدلاً من ذلك</span>
-    <div id="manual-section">
-      <input type="file" id="pdf-file" accept="application/pdf" />
-      <div class="row">
-        <button id="btn-stamp-manual">إضافة الختم على هذا الملف</button>
-      </div>
-    </div>
-
-    <div id="status"></div>
-
-    <div id="preview-wrap">
-      <label>معاينة الملف المختوم</label>
-      <iframe id="preview-frame"></iframe>
-    </div>
-  </div>
-
-  <script>
-    let dirHandle = null;
-    let currentPdfBytes = null;
-    let stampedPdfUrl = null;
-
-    const btnPickFolder = document.getElementById('btn-pick-folder');
-    const folderStatus = document.getElementById('folder-status');
-    const unsupportedMsg = document.getElementById('unsupported-msg');
-    const btnRefresh = document.getElementById('btn-refresh');
-    const btnPrint = document.getElementById('btn-print');
-    const btnDownload = document.getElementById('btn-download');
-    const toggleManual = document.getElementById('toggle-manual');
-    const manualSection = document.getElementById('manual-section');
-    const pdfFileInput = document.getElementById('pdf-file');
-    const btnStampManual = document.getElementById('btn-stamp-manual');
-    const statusDiv = document.getElementById('status');
-    const previewWrap = document.getElementById('preview-wrap');
-    const previewFrame = document.getElementById('preview-frame');
-    const nationalIdInput = document.getElementById('national-id');
-
-    // التحقق من دعم المتصفح لـ File System Access API
-    if (!('showDirectoryPicker' in window)) {
-      unsupportedMsg.style.display = 'block';
-      btnPickFolder.disabled = true;
-    }
-
-    toggleManual.addEventListener('click', () => {
-      manualSection.style.display = manualSection.style.display === 'block' ? 'none' : 'block';
-    });
-
-    btnPickFolder.addEventListener('click', async () => {
-      try {
-        dirHandle = await window.showDirectoryPicker();
-        folderStatus.innerText = `المجلد المحدد: ${dirHandle.name}`;
-        btnRefresh.disabled = false;
-        setStatus('تم اختيار المجلد بنجاح. يمكنك الآن ختم أحدث ملف.', 'ok');
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          setStatus('تعذر الوصول إلى المجلد المحدد.', 'err');
-        }
-      }
-    });
-
-    btnRefresh.addEventListener('click', async () => {
-      if (!dirHandle) return;
-      try {
-        setStatus('جاري البحث عن أحدث ملف PDF...', '');
-        let latestFile = null;
-        let latestMtime = 0;
-
-        for await (const entry of dirHandle.values()) {
-          if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.pdf')) {
-            const file = await entry.getFile();
-            if (file.lastModified > latestMtime) {
-              latestMtime = file.lastModified;
-              latestFile = file;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مكتبة بلعرير | هدوء وإتقان</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        softBeige: '#f7f3f0',
+                        warmGray: '#7a7470',
+                        earthyBrown: '#8d775f',
+                        deepSlate: '#2d3436',
+                        whatsappGreen: '#25D366',
+                        telegramBlue: '#0088cc',
+                    },
+                    screens: {
+                        'xs': '375px',
+                    }
+                }
             }
-          }
         }
-
-        if (!latestFile) {
-          setStatus('لم يتم العثور على أية ملفات PDF في هذا المجلد.', 'err');
-          return;
-        }
-
-        const arrayBuffer = await latestFile.arrayBuffer();
-        await processPdf(arrayBuffer, latestFile.name);
-      } catch (err) {
-        setStatus('حدث خطأ أثناء قراءة المجلد: ' + err.message, 'err');
-      }
-    });
-
-    btnStampManual.addEventListener('click', async () => {
-      const file = pdfFileInput.files[0];
-      if (!file) {
-        setStatus('يرجى اختيار ملف PDF أولاً.', 'err');
-        return;
-      }
-      const arrayBuffer = await file.arrayBuffer();
-      await processPdf(arrayBuffer, file.name);
-    });
-
-    async function processPdf(arrayBuffer, fileName) {
-      const nationalId = nationalIdInput.value.trim();
-      try {
-        setStatus('جاري معالجة الملف وإضافة الختم...', '');
-        const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-        const pages = pdfDoc.getPages();
-        const firstPage = pages[0];
-        const { width, height } = firstPage.getSize();
-
-        // إضافة نص التواصل ورقم التعريف الوطني على الصفحة الأولى
-        const contactText = "belarir3@gmail.com | @belarir3 | مكتبة بلعرير | 049621695 | 0550341695";
+    </script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; scroll-behavior: smooth; background-color: #f7f3f0; color: #2d3436; overflow-x: hidden; }
         
-        // رسم شريط سفلي
-        firstPage.drawRectangle({
-          x: 0,
-          y: 0,
-          width: width,
-          height: 25,
-          color: PDFLib.rgb(0.95, 0.95, 0.95),
-        });
-
-        firstPage.drawText(contactText, {
-          x: 20,
-          y: 8,
-          size: 9,
-          color: PDFLib.rgb(0.2, 0.2, 0.2),
-        });
-
-        if (nationalId) {
-          firstPage.drawText(`NIN: ${nationalId}`, {
-            x: width - 150,
-            y: height - 20,
-            size: 11,
-            color: PDFLib.rgb(0.8, 0, 0),
-          });
+        .hero-section {
+            background: linear-gradient(rgba(247, 243, 240, 0.7), rgba(247, 243, 240, 0.7)), 
+                        url('https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
         }
 
-        const pdfBytes = await pdfDoc.save();
-        currentPdfBytes = pdfBytes;
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
 
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        if (stampedPdfUrl) URL.revokeObjectURL(stampedPdfUrl);
-        stampedPdfUrl = URL.createObjectURL(blob);
+        .contact-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 12px 8px;
+            border-radius: 14px;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
 
-        previewFrame.src = stampedPdfUrl;
-        previewWrap.style.display = 'block';
+        .contact-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
 
-        btnPrint.disabled = false;
-        btnDownload.disabled = false;
+        .nav-btn {
+            background: #8d775f;
+            color: white;
+        }
 
-        setStatus(`تم ختم الملف "${fileName}" بنجاح!`, 'ok');
-      } catch (err) {
-        setStatus('حدث خطأ أثناء معالجة ملف PDF: ' + err.message, 'err');
-      }
-    }
+        .icon-bounce:hover i { animation: bounce 0.5s infinite; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
 
-    btnDownload.addEventListener('click', () => {
-      if (!currentPdfBytes) return;
-      const blob = new Blob([currentPdfBytes], { type: 'application/pdf' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'stamped_document.pdf';
-      a.click();
-    });
+        .service-item {
+            transition: all 0.3s ease;
+        }
+        .service-item:hover {
+            transform: translateY(-5px);
+            background: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
 
-    btnPrint.addEventListener('click', () => {
-      if (!stampedPdfUrl) return;
-      previewFrame.contentWindow.print();
-    });
+        .pulse-whatsapp { animation: pulse-green 2s infinite; }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        }
+        
+        .prayer-card {
+            background: white;
+            border: 1px solid rgba(141, 119, 95, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .prayer-card:hover {
+            transform: scale(1.05);
+            border-color: #8d775f;
+        }
+    </style>
+</head>
+<body class="antialiased">
 
-    function setStatus(msg, type) {
-      statusDiv.innerText = msg;
-      statusDiv.className = type;
-    }
-  </script>
+    <!-- Top Bar Navigation -->
+    <nav class="sticky top-0 z-50 glass-effect">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex flex-col">
+                <h1 class="text-base font-bold text-deepSlate">مكتبة بلعرير</h1>
+                <span class="text-[8px] text-earthyBrown uppercase tracking-widest font-bold">Brezina - El Bayadh</span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                 <div id="digital-clock" class="text-[10px] font-bold bg-earthyBrown/10 px-2 py-1 rounded hidden xs:block">00:00:00</div>
+                 <a href="https://wa.me/message/COHKEFFADO3KF1" class="pulse-whatsapp bg-whatsappGreen text-white px-3 py-2 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1">
+                    <i class="fab fa-whatsapp"></i> واتساب
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-section py-16 flex items-center px-4 border-b border-gray-100">
+        <div class="container mx-auto text-center">
+            <div data-aos="fade-up" class="bg-white/50 backdrop-blur-md inline-block p-8 rounded-[2.5rem] border border-white/60 shadow-xl w-full max-w-lg">
+                <h2 class="text-3xl font-bold mb-3 text-deepSlate">
+                    مكتبة بلعرير <br>
+                    <span class="text-earthyBrown text-xl" id="typed-text"></span>
+                </h2>
+                <p class="text-xs text-warmGray mb-8 leading-relaxed max-w-[300px] mx-auto font-semibold">
+                    خدمات رقمية احترافية، قرطاسية متكاملة، وحلول إعلام آلي متطورة في قلب بريزينة.
+                </p>
+                
+                <!-- أزرار الاتصال -->
+                <div class="grid grid-cols-2 xs:grid-cols-4 gap-3 mb-4">
+                    <a href="tel:0550341695" class="contact-btn bg-deepSlate text-white icon-bounce">
+                        <i class="fas fa-phone-alt"></i> هاتف
+                    </a>
+                    <a href="https://wa.me/message/COHKEFFADO3KF1" class="contact-btn bg-whatsappGreen text-white icon-bounce">
+                        <i class="fab fa-whatsapp"></i> واتساب
+                    </a>
+                    <a href="https://t.me/belarir3" class="contact-btn bg-telegramBlue text-white icon-bounce">
+                        <i class="fab fa-telegram-plane"></i> تيليجرام
+                    </a>
+                    <a href="mailto:belarir3@gmail.com" class="contact-btn bg-white border border-gray-200 text-deepSlate icon-bounce">
+                        <i class="fas fa-envelope text-red-500"></i> إيميل
+                    </a>
+                </div>
+
+                <!-- أزرار التنقل السريع (الجديدة) -->
+                <div class="grid grid-cols-2 gap-3">
+                    <a href="#prayer-times" class="contact-btn nav-btn icon-bounce">
+                        <i class="fas fa-mosque"></i> مواقيت الصلاة
+                    </a>
+                    <a href="#audio-library" class="contact-btn nav-btn icon-bounce">
+                        <i class="fas fa-quran"></i> القرآن الكريم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 1. مواقيت الصلاة -->
+    <section id="prayer-times" class="py-10 bg-softBeige/30 border-b border-gray-100">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col items-center mb-6">
+                <h3 class="text-xs font-bold text-warmGray tracking-widest uppercase mb-2">مواقيت الصلاة - بريزينة</h3>
+                <div class="w-10 h-0.5 bg-earthyBrown/30"></div>
+            </div>
+            <div id="prayers-container" class="grid grid-cols-3 md:grid-cols-5 gap-3 max-w-4xl mx-auto">
+                <!-- Dynamic content -->
+            </div>
+            <p id="hijri-large" class="text-center text-xs font-bold text-earthyBrown mt-6" data-aos="fade-up"></p>
+        </div>
+    </section>
+
+    <!-- 2. القرآن الكريم -->
+    <section id="audio-library" class="py-12 bg-white border-b border-gray-50">
+        <div class="container mx-auto px-4 text-center">
+            <div class="bg-softBeige/20 p-8 rounded-[2.5rem] border border-earthyBrown/10 shadow-sm max-w-lg mx-auto" data-aos="zoom-in">
+                <div class="mb-6">
+                    <div class="inline-block p-4 bg-white rounded-full mb-3 text-earthyBrown shadow-sm">
+                        <i class="fas fa-quran text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-deepSlate">المكتبة الصوتية القرآنية</h3>
+                    <p class="text-[10px] text-warmGray mt-1">بصوت الشيخ ماهر المعيقلي</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <input type="hidden" id="reciter-select" value="https://server12.mp3quran.net/maher/">
+                    <select id="surah-select" class="w-full p-4 text-xs rounded-2xl border-none shadow-sm outline-none bg-white text-deepSlate font-bold cursor-pointer transition-all focus:ring-2 focus:ring-earthyBrown/20">
+                        <option value="" disabled selected>اختر السورة الكريمة</option>
+                    </select>
+                    <button onclick="playQuran()" class="w-full bg-earthyBrown text-white py-4 rounded-2xl text-xs font-bold shadow-lg hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-play"></i> تشغيل التلاوة
+                    </button>
+                    <div id="audio-player-container" class="hidden mt-6 p-4 bg-white rounded-2xl shadow-inner border border-gray-50">
+                        <p id="current-info" class="text-[10px] font-bold text-earthyBrown mb-3"></p>
+                        <audio id="quran-audio" controls class="w-full"></audio>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. قسم الخدمات الرقمية -->
+    <section id="detailed-services" class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-10" data-aos="fade-up">
+                <h3 class="text-xl font-bold text-deepSlate mb-2">خدماتنا المتميزة</h3>
+                <div class="w-12 h-1 [background:linear-gradient(90deg,transparent,#8d775f,transparent)] mx-auto"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="service-item p-6 rounded-3xl bg-softBeige/30 border border-gray-100" data-aos="fade-up">
+                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-earthyBrown shadow-sm mb-4">
+                        <i class="fas fa-file-invoice fa-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-sm mb-2">استخراج الوثائق الرقمية</h4>
+                    <p class="text-[11px] text-warmGray leading-relaxed">استخراج قسيمات الرواتب، شهادات الميلاد، السوابق العدلية، وجميع الوثائق الإدارية عبر الإنترنت.</p>
+                </div>
+
+                <div class="service-item p-6 rounded-3xl bg-softBeige/30 border border-gray-100" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-earthyBrown shadow-sm mb-4">
+                        <i class="fas fa-user-plus fa-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-sm mb-2">التسجيلات والمنصات</h4>
+                    <p class="text-[11px] text-warmGray leading-relaxed">تسجيلات الحج، التسجيلات الجامعية والمدرسية، والتسجيل في منصات التوظيف (Minha, Wassit, إلخ).</p>
+                </div>
+
+                <div class="service-item p-6 rounded-3xl bg-softBeige/30 border border-gray-100" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-earthyBrown shadow-sm mb-4">
+                        <i class="fas fa-keyboard fa-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-sm mb-2">معالجة النصوص والبحوث</h4>
+                    <p class="text-[11px] text-warmGray leading-relaxed">رقن المذكرات والبحوث العلمية باللغتين العربية والفرنسية مع تنسيق احترافي وطباعة فاخرة.</p>
+                </div>
+
+                <div class="service-item p-6 rounded-3xl bg-softBeige/30 border border-gray-100" data-aos="fade-up" data-aos-delay="300">
+                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-earthyBrown shadow-sm mb-4">
+                        <i class="fas fa-laptop-medical fa-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-sm mb-2">صيانة وبرمجيات</h4>
+                    <p class="text-[11px] text-warmGray leading-relaxed">تثبيت الأنظمة (Windows)، تثبيت البرامج الأساسية، وحلول تقنية لمشاكل الحاسوب والملحقات.</p>
+                </div>
+
+                <div class="service-item p-6 rounded-3xl bg-softBeige/30 border border-gray-100" data-aos="fade-up" data-aos-delay="400">
+                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-earthyBrown shadow-sm mb-4">
+                        <i class="fas fa-id-card fa-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-sm mb-2">تصميم البطاقات واللوحات</h4>
+                    <p class="text-[11px] text-warmGray leading-relaxed">تصميم بطاقات العمل، المطويات الإشهارية، وبطاقات التهنئة لمختلف المناسبات.</p>
+                </div>
+
+                <div class="service-item p-6 rounded-3xl bg-softBeige/30 border border-gray-100" data-aos="fade-up" data-aos-delay="500">
+                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-earthyBrown shadow-sm mb-4">
+                        <i class="fas fa-search fa-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-sm mb-2">البحث المعلوماتي</h4>
+                    <p class="text-[11px] text-warmGray leading-relaxed">توفير المصادر والمراجع والمقالات العلمية للطلبة والأساتذة من مختلف قواعد البيانات.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 bg-deepSlate text-softBeige/40 text-center">
+        <div class="container mx-auto px-4">
+            <div class="mb-8">
+                <h2 class="text-white font-bold text-lg mb-1">مكتبة بلعرير</h2>
+                <p class="text-[10px]">بريزينة - ولاية البيض</p>
+            </div>
+            <div class="flex justify-center gap-8 text-2xl mb-8">
+                <a href="https://www.facebook.com/share/16n8Utr2QZ/" class="hover:text-white transition-colors"><i class="fab fa-facebook"></i></a>
+                <a href="https://t.me/belarir3" class="hover:text-white transition-colors"><i class="fab fa-telegram"></i></a>
+                <a href="tel:0550341695" class="hover:text-white transition-colors"><i class="fas fa-phone"></i></a>
+            </div>
+            <p class="text-[9px] uppercase tracking-widest opacity-30">© 2026 Belarir Digital Services</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        const surahNames = ["الفاتحة","البقرة","آل عمران","النساء","المائدة","الأنعام","الأعراف","الأنفال","التوبة","يونس","هود","يوسف","الرعد","إبراهيم","الحجر","النحل","الإسراء","الكهف","مريم","طه","الأنبياء","الحج","المؤمنون","النور","الفرقان","الشعراء","النمل","القصص","العنكبوت","الروم","لقمان","السجدة","الأحزاب","سبأ","فاطر","يس","الصافات","ص","الزمر","غافر","فصلت","الشورى","الزخرف","الدخان","الجاثية","الأحقاف","محمد","الفتح","الحجرات","ق","الذاريات","الطور","النجم","القمر","الرحمن","الواقعة","الحديد","المجادلة","الحشر","الممتحنة","الصف","الجمعة","المنافقون","التغابن","الطلاق","التحريم","الملك","القلم","الحاقة","المعارج","نوح","الجن","المزمل","المدثر","القيامة","الإنسان","المرسلات","النبأ","النازعات","عبس","التكوير","الانفطار","المتطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد","الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات","القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر","المسد","الإخلاص","الفلق","الناس"];
+
+        function updateClock() {
+            const clockEl = document.getElementById('digital-clock');
+            if(clockEl) clockEl.textContent = new Date().toLocaleTimeString('ar-DZ', { hour12: false });
+        }
+
+        async function fetchPrayerTimes() {
+            try {
+                const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=Brezina&country=Algeria&method=3`);
+                const data = await res.json();
+                const t = data.data.timings, h = data.data.date.hijri;
+                document.getElementById('hijri-large').textContent = `${h.day} ${h.month.ar} ${h.year} هـ`;
+                const map = { Fajr: "الفجر", Dhuhr: "الظهر", Asr: "العصر", Maghrib: "المغرب", Isha: "العشاء" };
+                const container = document.getElementById('prayers-container');
+                container.innerHTML = '';
+                Object.keys(map).forEach(key => {
+                    const div = document.createElement('div');
+                    div.className = "prayer-card p-4 rounded-2xl text-center shadow-sm";
+                    div.innerHTML = `<p class="text-[9px] text-warmGray font-bold mb-1">${map[key]}</p><p class="text-[13px] font-bold text-deepSlate">${t[key]}</p>`;
+                    container.appendChild(div);
+                });
+            } catch(e) {}
+        }
+
+        function playQuran() {
+            const server = document.getElementById('reciter-select').value;
+            const sSelect = document.getElementById('surah-select');
+            const surahNum = sSelect.value;
+            if(!surahNum) return;
+            const audio = document.getElementById('quran-audio');
+            audio.src = `${server}${surahNum}.mp3`;
+            document.getElementById('current-info').textContent = `سورة ${sSelect.options[sSelect.selectedIndex].text}`;
+            document.getElementById('audio-player-container').classList.remove('hidden');
+            audio.play();
+        }
+
+        function init() {
+            AOS.init({ duration: 1000, once: true });
+            const sSelect = document.getElementById('surah-select');
+            surahNames.forEach((n, i) => {
+                const opt = document.createElement('option');
+                opt.value = (i + 1).toString().padStart(3, '0');
+                opt.textContent = n;
+                sSelect.appendChild(opt);
+            });
+            new Typed('#typed-text', {
+                strings: ['خدمات رقمية متكاملة', 'قرطاسية وأدوات مكتبية', 'صيانة وحلول تقنية'],
+                typeSpeed: 60, backSpeed: 40, loop: true
+            });
+            setInterval(updateClock, 1000);
+            updateClock();
+            fetchPrayerTimes();
+        }
+        window.onload = init;
+    </script>
 </body>
 </html>
